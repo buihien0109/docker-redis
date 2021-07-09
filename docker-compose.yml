@@ -1,0 +1,47 @@
+version: "3.8"
+
+networks:
+  overlay:
+    external: true
+
+volumes:
+  redis_data:
+    driver: local
+
+services:
+  redis-primary:
+    image: bitnami/redis:latest
+    ports:
+      - '6379'
+    environment:
+      - REDIS_REPLICATION_MODE=master
+      - REDIS_PASSWORD=mypass
+    volumes:
+      - redis_data:/bitnami/redis/data
+    networks:
+      - overlay
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+          - node.hostname == 192.168.0.7
+
+  redis-secondary:
+    image: bitnami/redis:latest
+    ports:
+      - '6379'
+    depends_on:
+      - redis-primary
+    environment:
+      - REDIS_REPLICATION_MODE=slave
+      - REDIS_MASTER_HOST=redis-primary
+      - REDIS_MASTER_PORT_NUMBER=6379
+      - REDIS_MASTER_PASSWORD=mypass
+      - REDIS_PASSWORD=mypass
+    networks:
+      - overlay
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+          - node.hostname == 192.168.0.8
